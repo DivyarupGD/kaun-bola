@@ -23,12 +23,7 @@ Questions are designed to invite quick, funny answers, but the app does not enfo
 
 The host can choose 1 to 20 questions. The default is 10. If the host leaves the question list empty, the app automatically picks that many random questions when the session starts. If the host adds fewer custom questions than selected, the remaining slots are filled randomly.
 
-NSFW filter behavior:
-
-- On: only non-NSFW questions are used.
-- Off: non-NSFW and NSFW questions are mixed.
-
-See `QUESTION_BANK.md` for the full built-in question lists.
+The built-in prompts live in `question-bank.js`.
 
 ## Firebase Config
 

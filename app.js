@@ -14,8 +14,9 @@ import {
   set,
   update
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+import { questionBank } from "./question-bank.js?v=kahoot-17";
 
-const DRAFT_KEY = "kaun-bola-host-draft-v8";
+const DRAFT_KEY = "kaun-bola-host-draft-v9";
 const DEVICE_KEY = "kaun-bola-device-id";
 const PLAYER_KEY = "kaun-bola-player";
 const HOST_ROOM_KEY = "kaun-bola-host-room";
@@ -23,91 +24,6 @@ const HOST_ROOM_KEY = "kaun-bola-host-room";
 const DEFAULT_ROUND_COUNT = 10;
 const MIN_ROUND_COUNT = 1;
 const MAX_ROUND_COUNT = 20;
-
-const safeQuestions = [
-  "Late to a house party. Your excuse?",
-  "Phone connects to speaker. Exposing song?",
-  "At a shaadi buffet. First attack?",
-  "Family WhatsApp opens. Panic word?",
-  "Waiter says last order. Table saver?",
-  "Free drama pass tonight. Meltdown topic?",
-  "Uber aux is yours. First vibe?",
-  "Famous tomorrow. Viral nickname?",
-  "Friend's bad plan. Your role?",
-  "Impress the group. Secret talent?",
-  "Mom calls mid-party. Your excuse?",
-  "You enter late. Entry song?",
-  "Group trip starts. Your job?",
-  "Cricket match is tense. Your superstition?",
-  "Someone starts gossip. Your face?",
-  "Your chai order reveals you. What is it?",
-  "You must fake confidence. Your phrase?",
-  "Dance circle opens. Your move?",
-  "Street food raid. First pick?",
-  "Friend borrows money. Your reaction?",
-  "Auto driver says no. Your comeback?",
-  "Office party starts. Your personality?",
-  "Host asks for help. Your escape?",
-  "You forgot a birthday. Damage control?",
-  "Group selfie time. Your pose?",
-  "Aunty asks salary. Your answer?",
-  "Board game cheating caught. Excuse?",
-  "Rain ruins plans. Backup plan?",
-  "Someone says 'one more round'. Your mood?",
-  "Karaoke starts. Your safe song?",
-  "Dinner bill arrives. Your expression?",
-  "Friend says 'trust me'. Your fear?",
-  "You become group admin. First rule?",
-  "Party snack disappears. Prime suspect?",
-  "Your toxic trait as a roommate?",
-  "Someone opens old photos. Panic level?",
-  "Shaadi DJ asks request. Your pick?",
-  "Your villain origin story?",
-  "You get caught daydreaming. Topic?"
-];
-
-const nsfwQuestions = [
-  "Crush sits next to you. Game plan?",
-  "Risky DM arrives. Reply vibe?",
-  "Friend says do not look. Target?",
-  "Flirty Hinglish text. Opening words?",
-  "Dating app match enters. Reaction?",
-  "Someone asks your type. Roast answer?",
-  "Caught stalking profile. Excuse?",
-  "Dare compliment time. Compliment target?",
-  "Shaadi-season scandal. Title?",
-  "Ex's friend appears. Panic move?",
-  "Party dare gets spicy. Safe word?",
-  "Drunk text temptation. Recipient?",
-  "Secret crush hint. Code name?",
-  "Your red flag nickname?",
-  "Someone says 'my place?' Reaction?",
-  "Dating app bio. Two words?",
-  "Forbidden crush category?",
-  "Your flirty eye contact level?",
-  "Ex texts 'hey'. Reply?",
-  "Sangeet afterparty. Bad idea?",
-  "Truth dare question. Dodge word?",
-  "Your situationship title?",
-  "Most dangerous emoji?",
-  "Late-night call excuse?",
-  "Your type in two words?",
-  "Worst place to meet an ex?",
-  "Secret party mission?",
-  "Your thirst trap caption?",
-  "Group finds your crush. Reaction?",
-  "Someone asks body count. Escape?",
-  "Your drunk confidence name?",
-  "Flirt fails. Recovery word?",
-  "Private story audience?",
-  "Most suspicious contact name?",
-  "Your breakup song?",
-  "Your guilty crush clue?",
-  "Party walk of shame excuse?",
-  "Your romantic weakness?",
-  "Risky confession topic?",
-  "Spiciest table rumor?"
-];
 
 const appNode = document.querySelector("#app");
 const firebaseConfig = window.KAUN_BOLA_FIREBASE_CONFIG || {};
@@ -148,16 +64,15 @@ function normalizeRoundCount(value) {
   return Math.min(MAX_ROUND_COUNT, Math.max(MIN_ROUND_COUNT, Math.round(count)));
 }
 
-function defaultDeck(nsfwFilter = true, count = DEFAULT_ROUND_COUNT, excludedQuestions = []) {
+function defaultDeck(count = DEFAULT_ROUND_COUNT, excludedQuestions = []) {
   const roundCount = normalizeRoundCount(count);
-  const bank = nsfwFilter ? safeQuestions : [...safeQuestions, ...nsfwQuestions];
   const excluded = new Set(excludedQuestions.map((question) => question.trim().toLowerCase()));
-  return shuffle(bank)
+  return shuffle(questionBank)
     .filter((question) => !excluded.has(question.trim().toLowerCase()))
     .slice(0, roundCount);
 }
 
-function buildQuestionDeck(customQuestions, nsfwFilter, count) {
+function buildQuestionDeck(customQuestions, count) {
   const roundCount = normalizeRoundCount(count);
 
   const selectedCustomQuestions = customQuestions.slice(0, roundCount);
@@ -166,7 +81,7 @@ function buildQuestionDeck(customQuestions, nsfwFilter, count) {
 
   return [
     ...selectedCustomQuestions,
-    ...defaultDeck(nsfwFilter, remainingCount, selectedCustomQuestions)
+    ...defaultDeck(remainingCount, selectedCustomQuestions)
   ];
 }
 
@@ -175,7 +90,6 @@ function loadDraft() {
     hostName: "The Host",
     sessionCode: generateRoomId(),
     roundCount: DEFAULT_ROUND_COUNT,
-    nsfwFilter: true,
     questions: []
   };
 
@@ -460,13 +374,6 @@ function renderHostSetup() {
               ${renderRoundCountOptions(roundCount)}
             </select>
           </label>
-          <button class="filter-toggle ${draft.nsfwFilter ? "active" : ""}" data-action="toggle-nsfw-filter" aria-pressed="${draft.nsfwFilter}">
-            <span>
-              <strong>NSFW filter</strong>
-              <small>${draft.nsfwFilter ? "On: spicy prompts hidden" : "Off: spicy prompts allowed"}</small>
-            </span>
-            <span class="switch" aria-hidden="true"><span class="switch-knob"></span></span>
-          </button>
         </section>
 
         <section class="wide">
@@ -492,7 +399,7 @@ function renderHostSetup() {
                     .join("")
                 : `<div class="empty-panel">
                     <strong>Auto random deck</strong>
-                    <span>${roundCount} ${draft.nsfwFilter ? "non-NSFW" : "mixed"} questions will be picked when the session starts.</span>
+                    <span>${roundCount} random ${roundCount === 1 ? "question" : "questions"} will be picked when the session starts.</span>
                   </div>`
             }
             ${
@@ -1061,7 +968,7 @@ function validateHostSetup() {
   const roomId = normalizeRoomId(draft.sessionCode);
   const roundCount = normalizeRoundCount(draft.roundCount);
   const customQuestions = draft.questions.map((question) => question.trim()).filter(Boolean);
-  const questions = buildQuestionDeck(customQuestions, draft.nsfwFilter, roundCount);
+  const questions = buildQuestionDeck(customQuestions, roundCount);
 
   if (!roomId) return { error: "Give the session a code or name." };
   if (!draft.hostName.trim()) return { error: "Give the host a name." };
@@ -1100,8 +1007,7 @@ async function createRoom() {
       hostName,
       hostPlayerId,
       hostDeviceId: view.deviceId,
-      createdAt: Date.now(),
-      nsfwFilter: draft.nsfwFilter
+      createdAt: Date.now()
     },
     settings: {
       questions: setup.questions,
@@ -1443,14 +1349,6 @@ appNode.addEventListener("click", async (event) => {
     render();
   }
 
-  if (action === "toggle-nsfw-filter") {
-    const turningOff = draft.nsfwFilter;
-    if (turningOff && !window.confirm("Turn off the NSFW filter and allow spicy prompts?")) return;
-    draft.nsfwFilter = !draft.nsfwFilter;
-    saveDraft();
-    render();
-  }
-
   if (action === "add-question") {
     draft.questions.push("");
     saveDraft();
@@ -1464,7 +1362,7 @@ appNode.addEventListener("click", async (event) => {
   }
 
   if (action === "randomize-questions") {
-    draft.questions = defaultDeck(draft.nsfwFilter, draft.roundCount);
+    draft.questions = defaultDeck(draft.roundCount);
     saveDraft();
     render();
   }

@@ -332,69 +332,6 @@ main {
   transform: none;
 }
 
-.filter-toggle {
-  display: flex;
-  min-height: 58px;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: var(--surface);
-  color: var(--ink);
-  cursor: pointer;
-  text-align: left;
-  box-shadow: var(--shadow);
-}
-
-.filter-toggle strong,
-.filter-toggle small {
-  display: block;
-}
-
-.filter-toggle strong {
-  font-weight: 950;
-}
-
-.filter-toggle small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.switch {
-  position: relative;
-  width: 50px;
-  height: 30px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-  background: #cfd6e2;
-  transition: background 0.16s ease;
-}
-
-.switch-knob {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(21, 23, 31, 0.24);
-  transition: transform 0.16s ease;
-}
-
-.filter-toggle.active .switch {
-  background: var(--teal);
-}
-
-.filter-toggle.active .switch-knob {
-  transform: translateX(20px);
-}
-
 .icon {
   display: inline-grid;
   width: 18px;
