@@ -234,61 +234,16 @@ main {
   align-items: start;
 }
 
-.avatar {
+.player-initials {
   display: grid;
   width: 40px;
   height: 40px;
   place-items: center;
   border-radius: 50%;
-  background: var(--avatar-bg, var(--violet-soft));
-  color: var(--avatar-fg, var(--violet));
+  background: var(--violet-soft);
+  color: var(--violet);
   font-weight: 950;
-  position: relative;
-  overflow: hidden;
-}
-
-.avatar::after {
-  position: absolute;
-  right: -7px;
-  bottom: -7px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--avatar-accent, rgba(255, 255, 255, 0.6));
-  content: "";
-}
-
-.avatar span {
-  position: relative;
-  z-index: 1;
-  font-size: 0.72rem;
   letter-spacing: 0;
-}
-
-.small-avatar {
-  width: 36px;
-  height: 36px;
-}
-
-.avatar-picker {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.avatar-option {
-  display: grid;
-  min-height: 46px;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  cursor: pointer;
-}
-
-.avatar-option.selected {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
 }
 
 .player-inline {

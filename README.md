@@ -1,14 +1,14 @@
 # Kaun Bola?
 
-Kaun Bola? is a mobile-first Indian party game. The host starts a session, joins as a player, players join from their own phones with names and avatars, submit secret funny answers, and the group guesses who wrote what.
+Kaun Bola? is a mobile-first Indian party game. The host starts a session, joins as a player, players join from their own phones with names, submit secret funny answers, and the group guesses who wrote what.
 
 ## Game Flow
 
 1. Host taps **Create Session**.
-2. Host enters host name, picks an avatar, and chooses room settings.
+2. Host enters host name and chooses room settings.
 3. Host gets a large **Game PIN** in the waiting lobby.
 4. Players tap **Join Session** from their phones.
-5. Players enter the Game PIN, type their own names, and pick avatars.
+5. Players enter the Game PIN and type their own names.
 6. Host and joined players appear on the host waiting screen.
 7. Once everyone has joined, host taps **Start Game**.
 8. Host and players answer privately.
@@ -21,7 +21,7 @@ Kaun Bola? is a mobile-first Indian party game. The host starts a session, joins
 
 Questions are designed to invite quick, funny answers, but the app does not enforce a word limit.
 
-The host can add custom questions. If the host leaves the question list empty, the app automatically picks 10 random questions when the session starts.
+The host can choose 1 to 20 questions. The default is 10. If the host leaves the question list empty, the app automatically picks that many random questions when the session starts. If the host adds fewer custom questions than selected, the remaining slots are filled randomly.
 
 NSFW filter behavior:
 

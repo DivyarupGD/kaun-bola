@@ -15,45 +15,14 @@ import {
   update
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
-const DRAFT_KEY = "kaun-bola-host-draft-v5";
+const DRAFT_KEY = "kaun-bola-host-draft-v8";
 const DEVICE_KEY = "kaun-bola-device-id";
 const PLAYER_KEY = "kaun-bola-player";
 const HOST_ROOM_KEY = "kaun-bola-host-room";
 
-const ROUND_COUNT = 10;
-
-const avatarOptions = [
-  { id: "av01", mark: "KA", name: "Kahani", bg: "#ccfbf1", fg: "#0f766e", accent: "#99f6e4" },
-  { id: "av02", mark: "BO", name: "Bolti", bg: "#ffe4df", fg: "#b63529", accent: "#fecaca" },
-  { id: "av03", mark: "DJ", name: "DJ", bg: "#fff2bf", fg: "#8a5a00", accent: "#fde68a" },
-  { id: "av04", mark: "NA", name: "Nawab", bg: "#eee8ff", fg: "#7257b8", accent: "#ddd6fe" },
-  { id: "av05", mark: "CH", name: "Chai", bg: "#e0f2fe", fg: "#0369a1", accent: "#bae6fd" },
-  { id: "av06", mark: "RI", name: "Rider", bg: "#fce7f3", fg: "#be185d", accent: "#fbcfe8" },
-  { id: "av07", mark: "MA", name: "Masala", bg: "#ffedd5", fg: "#c2410c", accent: "#fed7aa" },
-  { id: "av08", mark: "YU", name: "Yuva", bg: "#dcfce7", fg: "#15803d", accent: "#bbf7d0" },
-  { id: "av09", mark: "RA", name: "Raja", bg: "#fee2e2", fg: "#b91c1c", accent: "#fecaca" },
-  { id: "av10", mark: "NI", name: "Ninja", bg: "#e5e7eb", fg: "#374151", accent: "#d1d5db" },
-  { id: "av11", mark: "TA", name: "Tadka", bg: "#fef3c7", fg: "#92400e", accent: "#fde68a" },
-  { id: "av12", mark: "ZA", name: "Zara", bg: "#ede9fe", fg: "#6d28d9", accent: "#ddd6fe" },
-  { id: "av13", mark: "MI", name: "Mirchi", bg: "#dcfce7", fg: "#166534", accent: "#86efac" },
-  { id: "av14", mark: "PA", name: "Pataka", bg: "#fae8ff", fg: "#a21caf", accent: "#f5d0fe" },
-  { id: "av15", mark: "BI", name: "Bindaas", bg: "#cffafe", fg: "#0e7490", accent: "#a5f3fc" },
-  { id: "av16", mark: "SH", name: "Shor", bg: "#fef9c3", fg: "#854d0e", accent: "#fef08a" },
-  { id: "av17", mark: "GO", name: "Golmaal", bg: "#e0e7ff", fg: "#4338ca", accent: "#c7d2fe" },
-  { id: "av18", mark: "PU", name: "Puchka", bg: "#ffedd5", fg: "#9a3412", accent: "#fdba74" },
-  { id: "av19", mark: "FA", name: "Filmy", bg: "#fce7f3", fg: "#9d174d", accent: "#f9a8d4" },
-  { id: "av20", mark: "JU", name: "Jugaad", bg: "#dbeafe", fg: "#1d4ed8", accent: "#bfdbfe" },
-  { id: "av21", mark: "AD", name: "Adda", bg: "#ccfbf1", fg: "#115e59", accent: "#5eead4" },
-  { id: "av22", mark: "BA", name: "Baaz", bg: "#fee2e2", fg: "#991b1b", accent: "#fca5a5" },
-  { id: "av23", mark: "QA", name: "Qawwali", bg: "#ecfccb", fg: "#4d7c0f", accent: "#d9f99d" },
-  { id: "av24", mark: "ME", name: "Mehfil", bg: "#f3e8ff", fg: "#7e22ce", accent: "#e9d5ff" },
-  { id: "av25", mark: "LU", name: "Ludo", bg: "#cffafe", fg: "#155e75", accent: "#67e8f9" },
-  { id: "av26", mark: "RO", name: "Rowdy", bg: "#fed7aa", fg: "#9a3412", accent: "#fb923c" },
-  { id: "av27", mark: "SO", name: "Soda", bg: "#bbf7d0", fg: "#166534", accent: "#86efac" },
-  { id: "av28", mark: "MO", name: "Momo", bg: "#e0f2fe", fg: "#075985", accent: "#7dd3fc" },
-  { id: "av29", mark: "VE", name: "Velvet", bg: "#f5d0fe", fg: "#86198f", accent: "#e879f9" },
-  { id: "av30", mark: "ZE", name: "Zeher", bg: "#e2e8f0", fg: "#0f172a", accent: "#cbd5e1" }
-];
+const DEFAULT_ROUND_COUNT = 10;
+const MIN_ROUND_COUNT = 1;
+const MAX_ROUND_COUNT = 20;
 
 const safeQuestions = [
   "Late to a house party. Your excuse?",
@@ -161,7 +130,6 @@ const view = {
   roomId: "",
   joinCode: "",
   joinName: "",
-  joinAvatarId: "av08",
   playerId: "",
   deviceId: getDeviceId()
 };
@@ -174,25 +142,62 @@ if (roomFromUrl) {
   view.joinCode = roomFromUrl;
 }
 
-function defaultDeck(nsfwFilter = true) {
+function normalizeRoundCount(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count)) return DEFAULT_ROUND_COUNT;
+  return Math.min(MAX_ROUND_COUNT, Math.max(MIN_ROUND_COUNT, Math.round(count)));
+}
+
+function defaultDeck(nsfwFilter = true, count = DEFAULT_ROUND_COUNT, excludedQuestions = []) {
+  const roundCount = normalizeRoundCount(count);
   const bank = nsfwFilter ? safeQuestions : [...safeQuestions, ...nsfwQuestions];
-  return shuffle(bank).slice(0, ROUND_COUNT);
+  const excluded = new Set(excludedQuestions.map((question) => question.trim().toLowerCase()));
+  return shuffle(bank)
+    .filter((question) => !excluded.has(question.trim().toLowerCase()))
+    .slice(0, roundCount);
+}
+
+function buildQuestionDeck(customQuestions, nsfwFilter, count) {
+  const roundCount = normalizeRoundCount(count);
+
+  const selectedCustomQuestions = customQuestions.slice(0, roundCount);
+  const remainingCount = roundCount - selectedCustomQuestions.length;
+  if (!remainingCount) return selectedCustomQuestions;
+
+  return [
+    ...selectedCustomQuestions,
+    ...defaultDeck(nsfwFilter, remainingCount, selectedCustomQuestions)
+  ];
 }
 
 function loadDraft() {
   const fallback = {
     hostName: "The Host",
-    hostAvatarId: "av01",
     sessionCode: generateRoomId(),
+    roundCount: DEFAULT_ROUND_COUNT,
     nsfwFilter: true,
     questions: []
   };
 
   try {
-    return { ...fallback, ...JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") };
+    const saved = { ...fallback, ...JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") };
+    saved.roundCount = normalizeRoundCount(saved.roundCount);
+    saved.questions = Array.isArray(saved.questions)
+      ? saved.questions.slice(0, saved.roundCount)
+      : [];
+    return saved;
   } catch {
     return fallback;
   }
+}
+
+function renderRoundCountOptions(selectedCount) {
+  return Array.from({ length: MAX_ROUND_COUNT - MIN_ROUND_COUNT + 1 }, (_, index) => {
+    const count = MIN_ROUND_COUNT + index;
+    return `
+    <option value="${count}" ${count === selectedCount ? "selected" : ""}>${count}</option>
+  `;
+  }).join("");
 }
 
 function saveDraft() {
@@ -246,38 +251,6 @@ function initials(name) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-}
-
-function avatarById(avatarId) {
-  return avatarOptions.find((avatar) => avatar.id === avatarId) || avatarOptions[0];
-}
-
-function renderAvatar(player, extraClass = "") {
-  const avatar = avatarById(player?.avatarId);
-  const label = player?.name ? `${player.name} avatar` : `${avatar.name} avatar`;
-
-  return `
-    <div class="avatar avatar-preset ${extraClass}" title="${escapeHtml(label)}" style="--avatar-bg: ${avatar.bg}; --avatar-fg: ${avatar.fg}; --avatar-accent: ${avatar.accent};">
-      <span>${escapeHtml(avatar.mark)}</span>
-    </div>
-  `;
-}
-
-function renderAvatarPicker(target, selectedAvatarId) {
-  return `
-    <div class="avatar-picker" role="listbox" aria-label="Choose avatar">
-      ${avatarOptions
-        .map((avatar) => {
-          const selected = avatar.id === selectedAvatarId;
-          return `
-            <button class="avatar-option ${selected ? "selected" : ""}" data-action="select-avatar" data-avatar-target="${target}" data-avatar-id="${avatar.id}" type="button" aria-label="${escapeHtml(avatar.name)} avatar" aria-selected="${selected}">
-              ${renderAvatar({ avatarId: avatar.id, name: avatar.name }, "small-avatar")}
-            </button>
-          `;
-        })
-        .join("")}
-    </div>
-  `;
 }
 
 function toList(value) {
@@ -402,8 +375,8 @@ async function initFirebase() {
 }
 
 function renderHeader() {
-  const roomLabel = view.roomId ? `Room ${view.roomId}` : "Netlify + Firebase";
-  const statusLabel = !hasFirebaseConfig ? "Setup needed" : user ? "Online" : "Connecting";
+  const roomLabel = view.roomId ? `Room ${view.roomId}` : "Party room";
+  const statusLabel = view.mode === "home" ? "Ready" : !hasFirebaseConfig ? "Setup needed" : user ? "Online" : "Connecting";
   return `
     <header class="app-header">
       <div class="brand">
@@ -444,20 +417,24 @@ function renderHome() {
         <p class="muted">Kahoot-style party rooms for anonymous funny answers.</p>
       </div>
       ${renderNotice()}
-      ${!hasFirebaseConfig ? renderSetupWarning() : ""}
       <div class="home-actions">
         <button class="button primary big-action" data-action="show-host-setup">Create Session</button>
         <button class="button ghost big-action" data-action="show-join">Join Session</button>
       </div>
       <section class="info-card">
         <span class="chip teal">How it plays</span>
-        <p class="info-text">Host gets a session code. Players enter the code, pick a name and avatar, and play from their own phones.</p>
+        <p class="info-text">The player whose answers are least often traced back to them wins.</p>
       </section>
     </section>
   `;
 }
 
 function renderHostSetup() {
+  const roundCount = normalizeRoundCount(draft.roundCount);
+  const customCount = draft.questions.length;
+  const questionCountLabel = customCount ? `${customCount}/${roundCount}` : `auto ${roundCount}`;
+  const fillCount = Math.max(0, roundCount - customCount);
+
   return `
     <section class="screen">
       <div>
@@ -473,13 +450,15 @@ function renderHostSetup() {
             Host name
             <input class="text-input" data-bind="hostName" maxlength="32" value="${escapeHtml(draft.hostName)}" />
           </label>
-          <div class="field-label">
-            Host avatar
-            ${renderAvatarPicker("host", draft.hostAvatarId)}
-          </div>
           <label class="field-label">
             Game PIN or session name
             <input class="text-input" data-bind="sessionCode" maxlength="16" autocapitalize="characters" value="${escapeHtml(draft.sessionCode)}" />
+          </label>
+          <label class="field-label">
+            Number of questions
+            <select class="text-input" data-bind="roundCount">
+              ${renderRoundCountOptions(roundCount)}
+            </select>
           </label>
           <button class="filter-toggle ${draft.nsfwFilter ? "active" : ""}" data-action="toggle-nsfw-filter" aria-pressed="${draft.nsfwFilter}">
             <span>
@@ -493,11 +472,11 @@ function renderHostSetup() {
         <section class="wide">
           <h2 class="section-title">
             Questions
-            <span class="section-count">${draft.questions.length ? draft.questions.length : `auto ${ROUND_COUNT}`}</span>
+            <span class="section-count">${questionCountLabel}</span>
           </h2>
           <div class="list-stack">
             ${
-              draft.questions.length
+              customCount
                 ? draft.questions
                     .map(
                       (question, index) => `
@@ -513,12 +492,20 @@ function renderHostSetup() {
                     .join("")
                 : `<div class="empty-panel">
                     <strong>Auto random deck</strong>
-                    <span>${ROUND_COUNT} ${draft.nsfwFilter ? "non-NSFW" : "mixed"} questions will be picked when the session starts.</span>
+                    <span>${roundCount} ${draft.nsfwFilter ? "non-NSFW" : "mixed"} questions will be picked when the session starts.</span>
                   </div>`
+            }
+            ${
+              customCount && fillCount
+                ? `<div class="empty-panel">
+                    <strong>Auto fill</strong>
+                    <span>${fillCount} random ${fillCount === 1 ? "question" : "questions"} will be added when the session starts.</span>
+                  </div>`
+                : ""
             }
           </div>
           <div class="actions">
-            <button class="button ghost" data-action="add-question">Add custom</button>
+            <button class="button ghost" data-action="add-question" ${customCount >= roundCount ? "disabled" : ""}>Add custom</button>
             <button class="button ghost" data-action="randomize-questions">Randomize now</button>
             <button class="button ghost" data-action="clear-questions" ${draft.questions.length ? "" : "disabled"}>Use auto</button>
           </div>
@@ -612,10 +599,6 @@ function renderPlayerJoin() {
           Your name
           <input class="text-input" data-bind="joinName" maxlength="28" autocomplete="name" placeholder="Example: Riya" value="${escapeHtml(view.joinName)}" />
         </label>
-        <div class="field-label">
-          Your avatar
-          ${renderAvatarPicker("join", view.joinAvatarId)}
-        </div>
         <button class="button primary" data-action="join-player" ${canJoin ? "" : "disabled"}>Join Waiting Room</button>
       </section>
       ${renderPlayerStatusList(players)}
@@ -707,7 +690,7 @@ function renderHostAnswer() {
         hostIsActive
           ? `<section class="join-card">
               <div class="player-inline">
-                ${renderAvatar(hostPlayer)}
+                <div class="player-initials">${escapeHtml(initials(hostPlayer.name))}</div>
                 <div>
                   <strong>${escapeHtml(hostPlayer.name)}</strong>
                   <span class="muted tiny">Host answer</span>
@@ -975,7 +958,7 @@ function renderPlayerStatusList(players) {
           .map(
             (player) => `
               <div class="score-row">
-                ${renderAvatar(player)}
+                <div class="player-initials">${escapeHtml(initials(player.name))}</div>
                 <p class="score-name">${escapeHtml(player.name)}</p>
                 <div class="status-badge ${player.joined ? "ready" : ""}">${escapeHtml(player.statusLabel || (player.id === room?.meta?.hostPlayerId ? "Host" : player.joined ? "Joined" : "Waiting"))}</div>
               </div>
@@ -1002,7 +985,7 @@ function renderScoreboard() {
           .map(
             (player) => `
               <div class="score-row">
-                ${renderAvatar(player)}
+                <div class="player-initials">${escapeHtml(initials(player.name))}</div>
                 <p class="score-name">${escapeHtml(player.name)}</p>
                 <div class="score-points">${Number(scores[player.id] || 0)}</div>
               </div>
@@ -1076,13 +1059,19 @@ function render() {
 
 function validateHostSetup() {
   const roomId = normalizeRoomId(draft.sessionCode);
+  const roundCount = normalizeRoundCount(draft.roundCount);
   const customQuestions = draft.questions.map((question) => question.trim()).filter(Boolean);
-  const questions = customQuestions.length ? customQuestions : defaultDeck(draft.nsfwFilter);
+  const questions = buildQuestionDeck(customQuestions, draft.nsfwFilter, roundCount);
 
   if (!roomId) return { error: "Give the session a code or name." };
   if (!draft.hostName.trim()) return { error: "Give the host a name." };
 
-  return { roomId, questions, autoQuestions: !customQuestions.length };
+  return {
+    roomId,
+    questions,
+    roundCount,
+    autoQuestions: customQuestions.length < roundCount
+  };
 }
 
 async function createRoom() {
@@ -1116,12 +1105,12 @@ async function createRoom() {
     },
     settings: {
       questions: setup.questions,
+      roundCount: setup.roundCount,
       autoQuestions: setup.autoQuestions
     },
     players: {
       [hostPlayerId]: {
         name: hostName,
-        avatarId: draft.hostAvatarId,
         claimedBy: view.deviceId,
         joined: true,
         joinedAt: Date.now()
@@ -1169,7 +1158,6 @@ async function joinPlayer() {
 
     return {
       name,
-      avatarId: view.joinAvatarId,
       claimedBy: view.deviceId,
       joined: true,
       joinedAt: Date.now()
@@ -1218,6 +1206,15 @@ async function startRound(roundIndex = room.roundIndex || 0) {
   }
 
   clearNotice();
+  if (!questions.length || !questions[roundIndex]) {
+    await update(roomRef(), {
+      phase: "end",
+      roundIndex: 0,
+      rounds: {}
+    });
+    return;
+  }
+
   const round = {
     question: questions[roundIndex],
     activePlayerIds: activeIds,
@@ -1387,13 +1384,21 @@ async function copyRoomLink() {
   }
 }
 
-appNode.addEventListener("input", (event) => {
+function handleBoundInput(event) {
   const target = event.target;
   const bind = target.dataset.bind;
   if (!bind) return;
+  if (event.type === "change" && target.tagName !== "SELECT") return;
 
   if (bind === "hostName") draft.hostName = target.value;
   if (bind === "sessionCode") draft.sessionCode = normalizeRoomId(target.value);
+  if (bind === "roundCount") {
+    draft.roundCount = normalizeRoundCount(target.value);
+    draft.questions = draft.questions.slice(0, draft.roundCount);
+    saveDraft();
+    render();
+    return;
+  }
   if (bind === "questionText") {
     draft.questions[Number(target.dataset.questionIndex)] = target.value;
   }
@@ -1405,7 +1410,10 @@ appNode.addEventListener("input", (event) => {
   }
 
   saveDraft();
-});
+}
+
+appNode.addEventListener("input", handleBoundInput);
+appNode.addEventListener("change", handleBoundInput);
 
 appNode.addEventListener("click", async (event) => {
   const actionTarget = event.target.closest("[data-action]");
@@ -1443,19 +1451,6 @@ appNode.addEventListener("click", async (event) => {
     render();
   }
 
-  if (action === "select-avatar") {
-    const avatarId = actionTarget.dataset.avatarId;
-    if (!avatarOptions.some((avatar) => avatar.id === avatarId)) return;
-
-    if (actionTarget.dataset.avatarTarget === "host") {
-      draft.hostAvatarId = avatarId;
-      saveDraft();
-    } else {
-      view.joinAvatarId = avatarId;
-    }
-    render();
-  }
-
   if (action === "add-question") {
     draft.questions.push("");
     saveDraft();
@@ -1469,7 +1464,7 @@ appNode.addEventListener("click", async (event) => {
   }
 
   if (action === "randomize-questions") {
-    draft.questions = defaultDeck(draft.nsfwFilter);
+    draft.questions = defaultDeck(draft.nsfwFilter, draft.roundCount);
     saveDraft();
     render();
   }
