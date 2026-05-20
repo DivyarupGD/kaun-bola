@@ -14,7 +14,7 @@ import {
   set,
   update
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-import { questionBank } from "./question-bank.js?v=kahoot-17";
+import { questionBank } from "./question-bank.js?v=kahoot-18";
 
 const DRAFT_KEY = "kaun-bola-host-draft-v9";
 const DEVICE_KEY = "kaun-bola-device-id";
@@ -24,6 +24,7 @@ const HOST_ROOM_KEY = "kaun-bola-host-room";
 const DEFAULT_ROUND_COUNT = 10;
 const MIN_ROUND_COUNT = 1;
 const MAX_ROUND_COUNT = 20;
+const MIN_PLAYERS = 2;
 
 const appNode = document.querySelector("#app");
 const firebaseConfig = window.KAUN_BOLA_FIREBASE_CONFIG || {};
@@ -566,11 +567,11 @@ function renderHostLobby() {
       ${renderPlayerStatusList(players)}
 
       <div class="actions">
-        <button class="button primary" data-action="start-round" ${joined.length < 3 || busy ? "disabled" : ""}>Start Game</button>
+        <button class="button primary" data-action="start-round" ${joined.length < MIN_PLAYERS || busy ? "disabled" : ""}>Start Game</button>
         <button class="button ghost" data-action="edit-new-room">New setup</button>
         <button class="button coral" data-action="delete-room">Delete room</button>
       </div>
-      ${joined.length < 3 ? `<p class="muted tiny">At least 3 players are needed before Start Game unlocks.</p>` : ""}
+      ${joined.length < MIN_PLAYERS ? `<p class="muted tiny">At least ${MIN_PLAYERS} players are needed before Start Game unlocks.</p>` : ""}
     </section>
   `;
 }
@@ -582,7 +583,7 @@ function renderHostAnswer() {
   const hostIsActive = hostPlayer && toList(round.activePlayerIds).includes(hostPlayer.id);
   const hostAnswer = hostIsActive ? round.answers?.[hostPlayer.id]?.text || "" : "";
   const answerCount = active.filter((player) => round.answers?.[player.id]?.text).length;
-  const complete = answerCount === active.length && active.length >= 3;
+  const complete = answerCount === active.length && active.length >= MIN_PLAYERS;
 
   return `
     <section class="screen">
@@ -1106,8 +1107,8 @@ async function startRound(roundIndex = room.roundIndex || 0) {
   const activeIds = joinedPlayers().map((player) => player.id);
   const questions = toList(room.settings?.questions);
 
-  if (activeIds.length < 3) {
-    setNotice("Wait for at least 3 players to join.");
+  if (activeIds.length < MIN_PLAYERS) {
+    setNotice(`Wait for at least ${MIN_PLAYERS} players to join.`);
     return;
   }
 

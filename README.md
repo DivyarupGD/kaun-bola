@@ -10,7 +10,7 @@ Kaun Bola? is a mobile-first Indian party game. The host starts a session, joins
 4. Players tap **Join Session** from their phones.
 5. Players enter the Game PIN and type their own names.
 6. Host and joined players appear on the host waiting screen.
-7. Once everyone has joined, host taps **Start Game**.
+7. Once at least two players have joined, host taps **Start Game**.
 8. Host and players answer privately.
 9. Host opens the discussion screen.
 10. The group assigns each anonymous answer to a player.
