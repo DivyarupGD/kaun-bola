@@ -14,7 +14,7 @@ import {
   set,
   update
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-import { questionBank } from "./question-bank.js?v=kahoot-18";
+import { questionBank } from "./question-bank.js?v=kahoot-19";
 
 const DRAFT_KEY = "kaun-bola-host-draft-v9";
 const DEVICE_KEY = "kaun-bola-device-id";
@@ -1233,16 +1233,9 @@ async function nextRound() {
 }
 
 async function endGame() {
-  if (!window.confirm("End the game and delete this room for everyone?")) return;
+  if (!window.confirm("End the game and show the winner screen?")) return;
   clearNotice();
-  await remove(roomRef());
-  localStorage.removeItem(HOST_ROOM_KEY);
-  localStorage.removeItem(PLAYER_KEY);
-  room = null;
-  roomMissing = false;
-  view.roomId = "";
-  view.mode = "home";
-  render();
+  await update(roomRef(), { phase: "end" });
 }
 
 async function restartRoom() {
